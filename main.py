@@ -4,6 +4,7 @@ import time
 import random
 from tkinter import messagebox, simpledialog
 import webbrowser
+import os
 
 motivational_quotes = [
     {"quote": "The only way to do great work is to love what you do.", "source": "Steve Jobs", "link": "https://www.youtube.com/watch?v=kSjj0LlsqnI"},
@@ -11,6 +12,25 @@ motivational_quotes = [
 ]
 
 focus_mode_is_running = False
+schedule_data = [] 
+
+def save_schedule():
+    with open("schedule.txt", "w", encoding="utf-8") as file:
+        for row in schedule_data:
+            file.write("\t".join(row) + "\n")
+    messagebox.showinfo("Lưu thành công", "Thời khóa biểu đã được lưu vào file 'schedule.txt'")
+
+def load_schedule():
+    if os.path.exists("schedule.txt"):
+        with open("schedule.txt", "r", encoding="utf-8") as file:
+            for i, line in enumerate(file.readlines()):
+                cells = line.strip().split("\t")
+                schedule_data[i] = cells
+                for j, cell_text in enumerate(cells):
+                    schedule_labels[i][j].configure(text=cell_text)
+        messagebox.showinfo("Nhập thành công", "Thời khóa biểu đã được nhập từ file.")
+    else:
+        messagebox.showwarning("Lỗi", "Không tìm thấy file 'schedule.txt'.")
 
 def update_clock():
     current_time = time.strftime("%H:%M:%S")
@@ -60,10 +80,11 @@ def open_link(url):
     webbrowser.open(url)
     show_random_quote()
 
-def edit_subject(cell):
+def edit_subject(cell, row, col):
     subject_name = simpledialog.askstring("Nhập môn học", "Tên môn học:")
     if subject_name:
         cell.configure(text=subject_name)
+        schedule_data[row][col] = subject_name
 
 
 def create_schedule_table(parent, start_row):
@@ -78,6 +99,10 @@ def create_schedule_table(parent, start_row):
             row=start_row + 1, column=col, sticky="nsew"
         )
 
+    global schedule_data, schedule_labels
+    schedule_data = [["" for _ in range(6)] for _ in range(10)]
+    schedule_labels = [[None for _ in range(6)] for _ in range(10)]
+    
     for row, period in enumerate(periods, start=start_row + 2):
         ctk.CTkLabel(parent, text=period, fg_color="#2b2b2b", width=30).grid(
             row=row, column=0, sticky="nsew"
@@ -87,7 +112,8 @@ def create_schedule_table(parent, start_row):
                 parent, text="", fg_color="#2b2b2b", width=100, height=40
             )
             cell.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
-            cell.bind("<Button-1>", lambda e, c=cell: edit_subject(c))
+            cell.bind("<Button-1>", lambda e, c=cell, r=row - start_row - 2, col=col - 1: edit_subject(c, r, col))
+            schedule_labels[row - start_row - 2][col - 1] = cell
 
     ctk.CTkLabel(
         parent, text="Buổi chiều", font=("Helvetica", 16, "bold"), fg_color="#00bcd4"
@@ -96,7 +122,6 @@ def create_schedule_table(parent, start_row):
         ctk.CTkLabel(parent, text=day, fg_color="#2b2b2b", width=80).grid(
             row=start_row + 8, column=col, sticky="nsew"
         )
-
     for row, period in enumerate(periods, start=start_row + 9):
         ctk.CTkLabel(parent, text=period, fg_color="#2b2b2b", width=30).grid(
             row=row, column=0, sticky="nsew"
@@ -106,7 +131,8 @@ def create_schedule_table(parent, start_row):
                 parent, text="", fg_color="#2b2b2b", width=100, height=40
             )
             cell.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
-            cell.bind("<Button-1>", lambda e, c=cell: edit_subject(c))
+            cell.bind("<Button-1>", lambda e, c=cell, r=row - start_row - 9, col=col - 1: edit_subject(c, r + 5, col))
+            schedule_labels[row - start_row - 9 + 5][col - 1] = cell
 
 
 app = ctk.CTk()
@@ -166,6 +192,11 @@ home_frame.grid_columnconfigure(0, weight=1)
 schedule_frame.grid_rowconfigure(0, weight=0)
 schedule_frame.grid_rowconfigure(1, weight=1)
 schedule_frame.grid_columnconfigure(0, weight=1)
+
+save_button = ctk.CTkButton(schedule_frame, text="Lưu", command=save_schedule)
+save_button.grid(row=2, column=0, sticky="e", padx=20, pady=10)
+load_button = ctk.CTkButton(schedule_frame, text="Nhập", command=load_schedule)
+load_button.grid(row=2, column=0, sticky="w", padx=20, pady=10)
 
 update_clock()
 show_random_quote()
