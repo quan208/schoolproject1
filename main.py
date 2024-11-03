@@ -2,7 +2,7 @@ import customtkinter as ctk
 from PIL import Image, ImageTk
 import time
 import random
-from tkinter import messagebox
+from tkinter import messagebox, simpledialog
 import webbrowser
 
 motivational_quotes = [
@@ -60,6 +60,55 @@ def open_link(url):
     webbrowser.open(url)
     show_random_quote()
 
+def edit_subject(cell):
+    subject_name = simpledialog.askstring("Nhập môn học", "Tên môn học:")
+    if subject_name:
+        cell.configure(text=subject_name)
+
+
+def create_schedule_table(parent, start_row):
+    days = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"]
+    periods = ["1", "2", "3", "4", "5"]
+
+    ctk.CTkLabel(
+        parent, text="Buổi sáng", font=("Helvetica", 16, "bold"), fg_color="#00bcd4"
+    ).grid(row=start_row, column=0, columnspan=7, sticky="nsew", pady=5)
+    for col, day in enumerate(["", *days]):
+        ctk.CTkLabel(parent, text=day, fg_color="#2b2b2b", width=80).grid(
+            row=start_row + 1, column=col, sticky="nsew"
+        )
+
+    for row, period in enumerate(periods, start=start_row + 2):
+        ctk.CTkLabel(parent, text=period, fg_color="#2b2b2b", width=30).grid(
+            row=row, column=0, sticky="nsew"
+        )
+        for col in range(1, 7):
+            cell = ctk.CTkLabel(
+                parent, text="", fg_color="#2b2b2b", width=100, height=40
+            )
+            cell.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
+            cell.bind("<Button-1>", lambda e, c=cell: edit_subject(c))
+
+    ctk.CTkLabel(
+        parent, text="Buổi chiều", font=("Helvetica", 16, "bold"), fg_color="#00bcd4"
+    ).grid(row=start_row + 7, column=0, columnspan=7, sticky="nsew", pady=5)
+    for col, day in enumerate(["", *days]):
+        ctk.CTkLabel(parent, text=day, fg_color="#2b2b2b", width=80).grid(
+            row=start_row + 8, column=col, sticky="nsew"
+        )
+
+    for row, period in enumerate(periods, start=start_row + 9):
+        ctk.CTkLabel(parent, text=period, fg_color="#2b2b2b", width=30).grid(
+            row=row, column=0, sticky="nsew"
+        )
+        for col in range(1, 7):
+            cell = ctk.CTkLabel(
+                parent, text="", fg_color="#2b2b2b", width=100, height=40
+            )
+            cell.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
+            cell.bind("<Button-1>", lambda e, c=cell: edit_subject(c))
+
+
 app = ctk.CTk()
 app.title("My app!")
 app.geometry("1280x720")
@@ -106,6 +155,17 @@ quote_text.set("Nhấn vào đây để xem nguồn")
 quote_label = ctk.CTkLabel(home_frame, textvariable=quote_text, font=("Helvetica", 20), text_color="blue")
 quote_label.grid(row=2, column=0)
 quote_label.bind("<Button-1>", lambda e: show_random_quote())
+
+timetable_frame = ctk.CTkFrame(schedule_frame, fg_color="#2b2b2b")
+timetable_frame.grid(row=1, column=0, padx=20, pady=20)
+create_schedule_table(timetable_frame, start_row=1)
+
+home_frame.grid_rowconfigure(0, weight=1)
+home_frame.grid_columnconfigure(0, weight=1)
+
+schedule_frame.grid_rowconfigure(0, weight=0)
+schedule_frame.grid_rowconfigure(1, weight=1)
+schedule_frame.grid_columnconfigure(0, weight=1)
 
 update_clock()
 show_random_quote()
