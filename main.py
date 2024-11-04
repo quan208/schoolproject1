@@ -7,18 +7,18 @@ import webbrowser
 import os
 
 motivational_quotes = [
-    {"quote": "The only way to do great work is to love what you do.", "source": "Steve Jobs", "link": "https://www.youtube.com/watch?v=kSjj0LlsqnI"},
-    {"quote": "Success is not the key to happiness. Happiness is the key to success.", "source": "Albert Schweitzer", "link": "https://www.youtube.com/watch?v=VbtVgQn_Zkk"},
+    {"quote": "The only way to do great work is to love what you do.", "source": "Steve Jobs", "link": "https://www.goodreads.com/quotes/772887-the-only-way-to-do-great-work-is-to-love"},
+    {"quote": "Success is not the key to happiness. Happiness is the key to success.", "source": "Albert Schweitzer", "link": "https://www.brainyquote.com/quotes/albert_schweitzer_155988"},
 ]
 
 focus_mode_is_running = False
 schedule_data = [] 
+focus_delay_id = None
 
 def save_schedule():
     with open("schedule.txt", "w", encoding="utf-8") as file:
         for row in schedule_data:
             file.write("\t".join(row) + "\n")
-    messagebox.showinfo("Lưu thành công", "Thời khóa biểu đã được lưu vào file 'schedule.txt'")
 
 def load_schedule():
     if os.path.exists("schedule.txt"):
@@ -28,9 +28,6 @@ def load_schedule():
                 schedule_data[i] = cells
                 for j, cell_text in enumerate(cells):
                     schedule_labels[i][j].configure(text=cell_text)
-        messagebox.showinfo("Nhập thành công", "Thời khóa biểu đã được nhập từ file.")
-    else:
-        messagebox.showwarning("Lỗi", "Không tìm thấy file 'schedule.txt'.")
 
 def update_clock():
     current_time = time.strftime("%H:%M:%S")
@@ -41,22 +38,32 @@ def show_frame(frame):
     frame.tkraise()
 
 def activate_focus_mode():
-    global focus_mode_is_running
+    global focus_mode_is_running, focus_delay_id
     if not focus_mode_is_running:
         focus_mode_is_running = True
-        home_frame.configure(fg_color="black")
-        schedule_frame.configure(fg_color="black")
-        nav_bar.configure(fg_color="#171717")
-    
+        timer_label.configure(text="Vui lòng đợi 3 giây...")
+        focus_delay_id = app.after(3000, start_focus_mode)
+
+def start_focus_mode():
+    global focus_delay_id
+    focus_delay_id = None  
+    home_frame.configure(fg_color="black")
+    schedule_frame.configure(fg_color="black")
+    note_frame.configure(fg_color="black")
+    nav_bar.configure(fg_color="#171717")
     focus_time = 25 * 60
     pomodoro(focus_time)
 
 def deactivate_focus_mode():
-    global focus_mode_is_running
+    global focus_mode_is_running, focus_delay_id
+    if focus_delay_id:
+        app.after_cancel(focus_delay_id)
+        focus_delay_id = None
     focus_mode_is_running = False
     home_frame.configure(fg_color="#2b2b2b")
     schedule_frame.configure(fg_color="#2b2b2b")
     nav_bar.configure(fg_color="#282828")
+    note_frame.configure(fg_color="#2b2b2b")
     timer_label.configure(text="")
 
 def pomodoro(count):
@@ -85,7 +92,7 @@ def edit_subject(cell, row, col):
     if subject_name:
         cell.configure(text=subject_name)
         schedule_data[row][col] = subject_name
-
+        save_schedule()
 
 def create_schedule_table(parent, start_row):
     days = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"]
@@ -100,7 +107,7 @@ def create_schedule_table(parent, start_row):
         )
 
     global schedule_data, schedule_labels
-    schedule_data = [["" for _ in range(6)] for _ in range(10)]
+    schedule_data = [["-" for _ in range(6)] for _ in range(10)]
     schedule_labels = [[None for _ in range(6)] for _ in range(10)]
     
     for row, period in enumerate(periods, start=start_row + 2):
@@ -109,7 +116,7 @@ def create_schedule_table(parent, start_row):
         )
         for col in range(1, 7):
             cell = ctk.CTkLabel(
-                parent, text="", fg_color="#2b2b2b", width=100, height=40
+                parent, text="-", fg_color="#2b2b2b", width=100, height=40
             )
             cell.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
             cell.bind("<Button-1>", lambda e, c=cell, r=row - start_row - 2, col=col - 1: edit_subject(c, r, col))
@@ -118,7 +125,7 @@ def create_schedule_table(parent, start_row):
     ctk.CTkLabel(
         parent, text="Buổi chiều", font=("Helvetica", 16, "bold"), fg_color="#00bcd4"
     ).grid(row=start_row + 7, column=0, columnspan=7, sticky="nsew", pady=5)
-    for col, day in enumerate(["", *days]):
+    for col, day in enumerate(["-", *days]):
         ctk.CTkLabel(parent, text=day, fg_color="#2b2b2b", width=80).grid(
             row=start_row + 8, column=col, sticky="nsew"
         )
@@ -128,35 +135,50 @@ def create_schedule_table(parent, start_row):
         )
         for col in range(1, 7):
             cell = ctk.CTkLabel(
-                parent, text="", fg_color="#2b2b2b", width=100, height=40
+                parent, text="-", fg_color="#2b2b2b", width=100, height=40
             )
             cell.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
             cell.bind("<Button-1>", lambda e, c=cell, r=row - start_row - 9, col=col - 1: edit_subject(c, r + 5, col))
             schedule_labels[row - start_row - 9 + 5][col - 1] = cell
 
+def save_note():
+    note_content = note_textbox.get("1.0", "end").strip() 
+    if note_content:
+        with open("note.txt", "w", encoding="utf-8") as file:
+            file.write(note_content)
+
+def load_note():
+    if os.path.exists("note.txt"):
+        with open("note.txt", "r", encoding="utf-8") as file:
+            note_textbox.insert("1.0", file.read())
 
 app = ctk.CTk()
 app.title("My app!")
-app.geometry("1280x720")
+app.geometry("1366x768")
 app.grid_columnconfigure(1, weight=1)
 app.grid_rowconfigure(0, weight=1)
 
 # biểu tượng của các nút điều hướng
 home_icon = ImageTk.PhotoImage(Image.open("home.png").resize((42, 42)))
-schedule_icon = ImageTk.PhotoImage(Image.open("file.png").resize((42, 42)))
-
+schedule_icon = ImageTk.PhotoImage(Image.open("calendar.png").resize((42, 42)))
+note_icon = ImageTk.PhotoImage(Image.open("note.png").resize((42, 42)))
+ 
 nav_bar = ctk.CTkFrame(app, width=70, corner_radius=0, fg_color="#282828")
 nav_bar.grid(row=0, column=0, sticky="ns")
 home_frame = ctk.CTkFrame(app)
 home_frame.grid(row=0, column=1, sticky="nsew")
 schedule_frame = ctk.CTkFrame(app)
 schedule_frame.grid(row=0, column=1, sticky="nsew")
+note_frame = ctk.CTkFrame(app)
+note_frame.grid(row=0, column=1, sticky="nsew")
 
 # các nút điều hướng
 home_button = ctk.CTkButton(nav_bar, width=64, height=64, image=home_icon, text="", command=lambda: show_frame(home_frame), fg_color="transparent")
 home_button.grid(row=0, column=0, pady=[5, 0 ])
 schedule_button = ctk.CTkButton(nav_bar, width=64, height=64, image=schedule_icon, text="", command=lambda: show_frame(schedule_frame), fg_color="transparent")
 schedule_button.grid(row=1, column=0)
+note_button = ctk.CTkButton(nav_bar, width=64, height=64, image=note_icon, text="", command=lambda: show_frame(note_frame), fg_color="transparent")
+note_button.grid(row=2, column=0)
 
 clock_label = ctk.CTkLabel(home_frame, text="", font=("Helvetica", 245), fg_color="transparent")
 clock_label.grid(row=0, column=0, sticky="nsew")
@@ -169,9 +191,9 @@ schedule_title.grid(row=0, column=0, sticky="we")
 
 # chế độ tập trung
 focus_mode_button = ctk.CTkButton(nav_bar, width=64, text="Focus", command=activate_focus_mode)
-focus_mode_button.grid(row=2, column=0, pady=[10, 0])
+focus_mode_button.grid(row=3, column=0, pady=[10, 0])
 exit_focus_button = ctk.CTkButton(nav_bar, width=64, text="Stop", command=deactivate_focus_mode)
-exit_focus_button.grid(row=3, column=0, pady=[5, 0])
+exit_focus_button.grid(row=4, column=0, pady=[5, 0])
 
 timer_label = ctk.CTkLabel(home_frame, text="", font=("Helvetica", 40))
 timer_label.grid(row=1, column=0)
@@ -193,13 +215,20 @@ schedule_frame.grid_rowconfigure(0, weight=0)
 schedule_frame.grid_rowconfigure(1, weight=1)
 schedule_frame.grid_columnconfigure(0, weight=1)
 
-save_button = ctk.CTkButton(schedule_frame, text="Lưu", command=save_schedule)
-save_button.grid(row=2, column=0, sticky="e", padx=20, pady=10)
-load_button = ctk.CTkButton(schedule_frame, text="Nhập", command=load_schedule)
-load_button.grid(row=2, column=0, sticky="w", padx=20, pady=10)
+note_frame.grid_rowconfigure(1, weight=1)
+note_frame.grid_columnconfigure(0, weight=1)
 
+note_title = ctk.CTkLabel(note_frame, text="Ghi chú", font=("Helvetica", 32))
+note_title.grid(row=0, column=0, sticky="we", pady=(10, 0))
+
+note_textbox = ctk.CTkTextbox(note_frame, font=("Helvetica", 14))
+note_textbox.grid(row=1, column=0, padx=20, pady=20, sticky="nsew")
+
+load_note()
 update_clock()
 show_random_quote()
 show_frame(home_frame)
+load_schedule()
+app.protocol("WM_DELETE_WINDOW", lambda: (save_note(), app.destroy()))
 
 app.mainloop()
