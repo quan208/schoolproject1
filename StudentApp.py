@@ -152,6 +152,7 @@ def load_note():
         with open("note.txt", "r", encoding="utf-8") as file:
             note_textbox.insert("1.0", file.read())
 
+ctk.set_appearance_mode("dark")
 app = ctk.CTk()
 app.title("My app!")
 app.geometry("1366x768")
@@ -231,4 +232,4 @@ show_frame(home_frame)
 load_schedule()
 app.protocol("WM_DELETE_WINDOW", lambda: (save_note(), app.destroy()))
 
-app.mainloop()
+app.mainloop() 
