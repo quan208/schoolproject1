@@ -7,7 +7,10 @@ THEMES = {
         "alt_text_color": "#000000",
         "dropdown_hover_color": "#333333",
         "tomorrow_schedule": "#7df19a",
-        "day_after_tomorrow_schedule": "#ffe680"
+        "day_after_tomorrow_schedule": "#ffe680",
+        "note_background": "#1f1d1d",
+        "focus_mode": "#000000",
+        "focus_mode_text": "#ffffff"
     },
     "light": {
         "app_theme": "light",
@@ -17,7 +20,10 @@ THEMES = {
         "alt_text_color": "#000000",
         "dropdown_hover_color": "#d3d3d3",
         "tomorrow_schedule": "#7df19a",
-        "day_after_tomorrow_schedule": "#ffe680"
+        "day_after_tomorrow_schedule": "#ffe680",
+        "note_background": "#ffffff",
+        "focus_mode": "#000000",
+        "focus_mode_text": "#ffffff"
     }
 }
 

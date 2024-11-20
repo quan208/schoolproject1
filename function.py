@@ -7,16 +7,26 @@ import misc.configuration as config
 
 colors = get_theme(config.theme_using)
 current_schedule = ""
-schedule_date = [["", "Toan", "Toan", "Toan", "Toan", "Toan"],
-                  ["Toan", "", "Toan", "Toan", "Toan", "Toan"],
+schedule_data = [["", "", "", "", "", ""],
                   ["", "", "", "", "", ""],
-                  ["Toan", "Toan", "Toan", "Toan", "Toan", "Toan"],
-                  ["Toan", "Toan", "Toan", "Toan", "Toan", "Toan"],
-                  ["a", "Toan", "Toan", "Toan", "Toan", "-"],
-                  ["b", "Toan", "Toan", "Toan", "Toan", "Toan"],
-                  ["c", "Toan", "Toan", "Toan", "Toan", "Toan"],
-                  ["d", "Toan", "Toan", "Toan", "Toan", "Toan"],
-                  ["e", "Toan", "Toan", "Toan", "Toan", "end"]]
+                  ["", "", "", "", "", ""],
+                  ["", "", "", "", "", ""],
+                  ["", "", "", "", "", ""],
+                  ["", "", "", "", "", ""],
+                  ["", "", "", "", "", ""],
+                  ["", "", "", "", "", ""],
+                  ["", "", "", "", "", ""],
+                  ["", "", "", "", "", ""]]
+raw_schedule_data = [["", "", "", "", "", ""],
+                  ["", "", "", "", "", ""],
+                  ["", "", "", "", "", ""],
+                  ["", "", "", "", "", ""],
+                  ["", "", "", "", "", ""],
+                  ["", "", "", "", "", ""],
+                  ["", "", "", "", "", ""],
+                  ["", "", "", "", "", ""],
+                  ["", "", "", "", "", ""],
+                  ["", "", "", "", "", ""]]
 
 def home_frame_function(frame):
     clock_label = ctk.CTkLabel(frame, text="", font=("Helvetica", 245), fg_color="transparent", text_color=colors["text_color"])
@@ -31,18 +41,152 @@ def home_frame_function(frame):
     frame.grid_columnconfigure(0, weight=1)
     frame.grid_rowconfigure(0, weight=1)
 
-
+# ===========================================================================================================
 
 def schedule_frame_function(frame):
     frame.grid_columnconfigure(0, weight=1)
     frame.grid_rowconfigure(1, weight=1)
 
-    schedule_table = ctk.CTkFrame(frame, width=1000, height=600, fg_color=colors["background"])
-    schedule_table.grid(row=1, column=0)
+    ctk.CTkLabel(frame, text=f"Tên TKB: {current_schedule}", font=("Arial", 20), text_color=colors["text_color"]).grid(row=0, column=0, sticky="nw")
 
+    schedule_table = ctk.CTkFrame(frame, width=1000, height=600, fg_color="transparent")
+    schedule_table.grid(row=1, column=0)
 
     create_schedule_table(schedule_table)
 
+    frame.grid_rowconfigure(2, weight=1)
+    
+    buttons_frame = ctk.CTkFrame(frame, fg_color="transparent")
+    buttons_frame.grid(row=2, column=0, sticky="nw")
+    
+    new_schedule_button = ctk.CTkButton(buttons_frame, text="Thêm TKB", width=150, font=("Arial", 20), text_color=colors["text_color"], command=lambda: create_new_schedule())
+    new_schedule_button.grid(row=0, column=0, padx=20)
+
+    load_schedule_button = ctk.CTkButton(buttons_frame, text="Chọn TKB", width=150, font=("Arial", 20), text_color=colors["text_color"], command=lambda: load_schedule_dialog())
+    load_schedule_button.grid(row=0, column=1, padx=20)
+    
+    delete_schedule_button = ctk.CTkButton(buttons_frame, text="Xóa TKB", width=150, font=("Arial", 20), text_color=colors["text_color"], command=lambda: delete_schedules())
+    delete_schedule_button.grid(row=0, column=2, padx=20)
+
+    def delete_schedules():
+        delete_dialog = ctk.CTkToplevel(fg_color=colors["background"])
+        delete_dialog.title("Xóa thời khóa biểu")
+        delete_dialog.geometry("300x400")
+        delete_dialog.resizable(False, False)
+        delete_dialog.grab_set()
+        delete_dialog.transient(frame)
+
+        schedule_label = ctk.CTkLabel(delete_dialog, text="Chọn thời khóa biểu cần xóa:", font=("Helvetica", 16), text_color=colors["text_color"])
+        schedule_label.pack(pady=10)
+
+        scroll_frame = ctk.CTkScrollableFrame(delete_dialog, width=270, height=280, fg_color=colors["background"])
+        scroll_frame.pack()
+
+        checkbox_var = {}
+        schedule_files = os.listdir(f"saves/{config.current_user}/schedules")
+
+        for file in schedule_files:
+            name = file.split('_', 1)[1].replace(".txt", "")
+            var = ctk.BooleanVar()
+            checkbox = ctk.CTkCheckBox(scroll_frame, text=name, variable=var, onvalue=True, offvalue=False, command=lambda file=file: checkbox_var.update({file: var}), text_color=colors["text_color"])
+            checkbox.pack(anchor="w", pady=5)
+            checkbox_var[file] = var
+        
+        confirm_button = ctk.CTkButton(delete_dialog, text="Xác nhận", command=lambda: confirm_delete())
+        confirm_button.pack(pady=10)
+
+        def confirm_delete():
+            selected_schedules = [schedule for schedule, var in checkbox_var.items() if var.get()]
+            if selected_schedules:
+                for schedule in selected_schedules:
+                    schedule_path = os.path.join(f"saves/{config.current_user}/schedules", schedule)
+                    if os.path.exists(schedule_path):
+                        os.remove(schedule_path)
+                delete_dialog.destroy()
+                restart_app(frame)
+    
+
+    def load_schedule_dialog():
+        load_dialog = ctk.CTkToplevel(fg_color=colors["background"])
+        load_dialog.title("Chọn thời khóa biểu")
+        load_dialog.geometry("250x320")
+        load_dialog.resizable(False, False)
+        load_dialog.grab_set()
+        
+        schedule_label = ctk.CTkLabel(load_dialog, text="Chọn thời khóa biểu:", font=("Arial", 16), text_color=colors["text_color"])
+        schedule_label.pack(pady=10)
+        
+        scroll_frame = ctk.CTkScrollableFrame(load_dialog, width=350, height=400, fg_color=colors['nav_bar'])
+        scroll_frame.pack(pady=10)
+        
+        schedule_files = os.listdir(f"saves/{config.current_user}/schedules")
+        for file in schedule_files:
+            name = file.split('_', 1)[1].replace(".txt", "")
+            btn = ctk.CTkButton(
+                scroll_frame, 
+                text=name,
+                command=lambda f=file: select_schedule(f, load_dialog),
+                fg_color=colors["background"],
+                text_color=colors["text_color"],
+                hover_color=colors["dropdown_hover_color"],
+                anchor='w'
+            )
+            btn.pack(pady=5, fill="x")
+            
+    def select_schedule(filename, dialog):
+        old_path = f"saves/{config.current_user}/schedules/{filename}"
+        new_filename = f"{int(time.time())}_{filename.split('_', 1)[1]}"
+        new_path = f"saves/{config.current_user}/schedules/{new_filename}"
+    
+        os.rename(old_path, new_path)
+        dialog.destroy()
+        restart_app(frame)
+
+    def create_new_schedule():
+        new_schedule_window = ctk.CTkToplevel(fg_color=colors["background"])
+        new_schedule_window.title("Tạo thời khóa biểu mới")
+        new_schedule_window.geometry("680x500")
+        new_schedule_window.resizable(False, False)
+        new_schedule_window.attributes("-topmost", True)
+
+        schedule_entries = []
+        new_schedule_name = ctk.CTkEntry(new_schedule_window, width=150, fg_color=colors["background"], text_color=colors["text_color"])
+        new_schedule_name.grid(row=11, column=0, columnspan=6, padx=5, pady=5)
+    
+        weekdays = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"] 
+        for i, day in enumerate(weekdays):
+            ctk.CTkLabel(new_schedule_window, text=day, font=("Arial", 20), text_color=colors["text_color"]).grid(row=0, column=i, padx=5, pady=5)
+
+        for row in range(10):
+            row_entries = []
+            for col in range(6):
+                entry = ctk.CTkEntry(new_schedule_window, width=100, fg_color=colors["background"], text_color=colors["text_color"])
+                entry.grid(row=row+1, column=col, padx=5, pady=5)
+                row_entries.append(entry)
+            schedule_entries.append(row_entries)
+
+        def save_schedule():
+            new_name = new_schedule_name.get()
+            if new_name:
+                timestamp = str(int(time.time()))
+                filename = f"{timestamp}_{new_name}.txt"
+                with open(f"saves/{config.current_user}/schedules/{filename}", "w+", encoding='utf-8') as f:
+                    for row in range(10): 
+                        line = []
+                        for col in range(6):  
+                            subject = schedule_entries[row][col].get()
+                            if subject != "":
+                                line.append(subject)
+                            else:
+                                line.append("-")
+                        f.write(" ".join(line) + "\n")
+
+                new_schedule_window.destroy()
+                restart_app(frame)
+
+        save_button = ctk.CTkButton(new_schedule_window, text="Lưu", command=save_schedule)
+        save_button.grid(row=12, columnspan=6, pady=10)
+    
 def create_schedule_table(frame):
     frame.grid_columnconfigure(tuple(range(8)), weight=1)  
     frame.grid_rowconfigure(tuple(range(12)), weight=1) 
@@ -64,21 +208,35 @@ def create_schedule_table(frame):
     load_schedule_subjects(frame)
 
 def load_schedule_subjects(frame):
+    global schedule_data
+    schedule_data = [["", "", "", "", "", ""] for _ in range(10)]
+    raw_schedule_data = [["", "", "", "", "", ""] for _ in range(10)]
+    
+    if current_schedule != None:
+        with open(f"saves/{config.current_user}/schedules/{current_schedule}", "r", encoding='utf-8') as f:
+            for i, line in enumerate(f.readlines()):
+                temp_ls = line.strip().split(" ")
+                for j, subject in enumerate(temp_ls):
+                    if (subject != '-'):
+                        schedule_data[i][j] = subject
+    else:
+        schedule_data = raw_schedule_data.copy()
+
     # các cell môn học sáng
     today = datetime.now().weekday()
     for i in range(2, 7):
         for j in range(3, 9):
             frame_subject = ctk.CTkFrame(frame)
             if ((today + 1) % 7 == j-3 and (today + 1) % 7 != 6):
-                frame_subject.configure(fg_color=colors["tomorrow_schedule"], bg_color=colors["tomorrow_schedule"])
+                frame_subject.configure(fg_color=colors["tomorrow_schedule"])
                 frame_subject.grid(row=i, column=j-1, sticky="nsew")
-                ctk.CTkLabel(frame_subject, text=schedule_date[i-2][j-3], font=("Arial", 18), text_color=colors["alt_text_color"], fg_color=colors["tomorrow_schedule"]).pack(fill="both", ipady=15, ipadx=8, expand=True)
+                ctk.CTkLabel(frame_subject, text=schedule_data[i-2][j-3], font=("Arial", 18), text_color=colors["alt_text_color"], fg_color=colors["tomorrow_schedule"]).pack(fill="both", ipady=15, ipadx=8, expand=True)
             elif (today + 2) % 7 == j-3 and (today + 2) % 7 != 6:
-                frame_subject.configure(fg_color=colors["day_after_tomorrow_schedule"], bg_color=colors["day_after_tomorrow_schedule"])
+                frame_subject.configure(fg_color=colors["day_after_tomorrow_schedule"])
                 frame_subject.grid(row=i, column=j-1, sticky="nsew")
-                ctk.CTkLabel(frame_subject, text=schedule_date[i-2][j-3], font=("Arial", 18), text_color=colors["alt_text_color"], fg_color=colors["day_after_tomorrow_schedule"]).pack(fill="both", ipady=15, ipadx=8, expand=True)
+                ctk.CTkLabel(frame_subject, text=schedule_data[i-2][j-3], font=("Arial", 18), text_color=colors["alt_text_color"], fg_color=colors["day_after_tomorrow_schedule"]).pack(fill="both", ipady=15, ipadx=8, expand=True)
             else:
-                ctk.CTkLabel(frame, text=schedule_date[i-2][j-3], font=("Arial", 18), text_color=colors["text_color"]).grid(row=i, column=j-1, padx=8, pady=15, sticky="nsew")
+                ctk.CTkLabel(frame, text=schedule_data[i-2][j-3], font=("Arial", 18), text_color=colors["text_color"]).grid(row=i, column=j-1, padx=8, pady=15, sticky="nsew")
 
 
     # các cell môn học chiều
@@ -86,22 +244,124 @@ def load_schedule_subjects(frame):
         for j in range(3, 9):
             frame_subject = ctk.CTkFrame(frame)
             if ((today + 1) % 7 == j-3 and (today + 1) % 7 != 6):
-                frame_subject.configure(fg_color=colors["tomorrow_schedule"], bg_color=colors["tomorrow_schedule"])
+                frame_subject.configure(fg_color=colors["tomorrow_schedule"])
                 frame_subject.grid(row=i, column=j-1, sticky="nsew")
-                ctk.CTkLabel(frame_subject, text=schedule_date[i-8][j-3], font=("Arial", 18), text_color=colors["alt_text_color"], fg_color=colors["tomorrow_schedule"]).pack(fill="both", ipady=15, ipadx=8, expand=True)
+                ctk.CTkLabel(frame_subject, text=schedule_data[i-3][j-3], font=("Arial", 18), text_color=colors["alt_text_color"], fg_color=colors["tomorrow_schedule"]).pack(fill="both", ipady=15, ipadx=8, expand=True)
             elif (today + 2) % 7 == j-3 and (today + 2) % 7 != 6:
-                frame_subject.configure(fg_color=colors["day_after_tomorrow_schedule"], bg_color=colors["day_after_tomorrow_schedule"])
+                frame_subject.configure(fg_color=colors["day_after_tomorrow_schedule"])
                 frame_subject.grid(row=i, column=j-1, sticky="nsew")
-                ctk.CTkLabel(frame_subject, text=schedule_date[i-8][j-3], font=("Arial", 18), text_color=colors["alt_text_color"], fg_color=colors["day_after_tomorrow_schedule"]).pack(fill="both", ipady=15, ipadx=8, expand=True)
+                ctk.CTkLabel(frame_subject, text=schedule_data[i-3][j-3], font=("Arial", 18), text_color=colors["alt_text_color"], fg_color=colors["day_after_tomorrow_schedule"]).pack(fill="both", ipady=15, ipadx=8, expand=True)
             else:
-                ctk.CTkLabel(frame, text=schedule_date[i-8][j-3], font=("Arial", 18), text_color=colors["text_color"]).grid(row=i, column=j-1, padx=8, pady=15, sticky="nsew")
-            
+                ctk.CTkLabel(frame, text=schedule_data[i-3][j-3], font=("Arial", 18), text_color=colors["text_color"]).grid(row=i, column=j-1, padx=8, pady=15, sticky="nsew")
+    
+def get_current_schedule():
+    schedule_dir = f"saves/{config.current_user}/schedules"
+    files = os.listdir(schedule_dir)
+    if files:
+        sorted_files = sorted(files, key=lambda x: int(x.split('_')[0]), reverse=True)
+        return sorted_files[0]
+    else:
+        return None
 
+current_schedule = get_current_schedule()
 
+# ================================================================================================================================================
 def note_frame_function(frame):
-    pass
+    frame.grid_columnconfigure(0, weight=1)
+    frame.grid_rowconfigure(2, weight=1)
+    buttons_frame = ctk.CTkFrame(frame, fg_color="transparent")
+    buttons_frame.grid(row=0, column=0, sticky="nw")
 
+    save_note_button = ctk.CTkButton(buttons_frame, text="Lưu ghi chú", width=150, font=("Arial", 20), text_color=colors["text_color"], command=lambda: save_current_note())
+    save_note_button.grid(row=0, column=0, padx=20, pady=5)
+    load_note_button = ctk.CTkButton(buttons_frame, text="Chọn ghi chú", width=150, font=("Arial", 20), text_color=colors["text_color"], command=lambda: load_note_dialog())
+    load_note_button.grid(row=0, column=1, padx=20, pady=5)
 
+    delete_note_button = ctk.CTkButton(buttons_frame, text="Xóa ghi chú", width=150, font=("Arial", 20), text_color=colors["text_color"], command=lambda: delete_notes())
+    delete_note_button.grid(row=0, column=2, padx=20, pady=5)
+
+    note_name = ctk.CTkEntry(frame, width=200, font=("Arial", 16), text_color=colors["text_color"], fg_color=colors["background"], placeholder_text="Tên ghi chú")
+    note_name.grid(row=1, column=0, padx=20, pady=10, sticky="w")
+    note_text = ctk.CTkTextbox(frame, width=800, height=670, font=("Arial", 16), text_color=colors["text_color"], fg_color=colors["note_background"])
+    note_text.grid(row=2, column=0, padx=20, pady=20, sticky="nsew")
+    def save_current_note():
+        name = note_name.get()
+        content = note_text.get("1.0", "end-1c")
+        if name and content:
+            timestamp = str(int(time.time()))
+            filename = f"{timestamp}_{name}.txt"
+            with open(f"saves/{config.current_user}/notes/{filename}", "w+", encoding='utf-8') as f:
+                f.write(content)
+            restart_app(frame)
+
+    def load_note_dialog():
+        load_dialog = ctk.CTkToplevel(fg_color=colors["background"])
+        load_dialog.title("Chọn ghi chú")
+        load_dialog.geometry("250x320")
+        load_dialog.resizable(False, False)
+        load_dialog.grab_set()
+        note_label = ctk.CTkLabel(load_dialog, text="Chọn ghi chú:", font=("Arial", 16), text_color=colors["text_color"])
+        note_label.pack(pady=10)
+        scroll_frame = ctk.CTkScrollableFrame(load_dialog, width=350, height=400, fg_color="transparent")
+        scroll_frame.pack(pady=10)
+        note_files = os.listdir(f"saves/{config.current_user}/notes")
+        for file in note_files:
+            name = file.split('_', 1)[1].replace(".txt", "")
+            btn = ctk.CTkButton(
+                scroll_frame, 
+                text=name,
+                command=lambda f=file: load_note(f, load_dialog),
+                fg_color=colors["background"],
+                text_color=colors["text_color"],
+                hover_color=colors["dropdown_hover_color"],
+                anchor="w",
+                width=300
+            )
+            btn.pack(pady=5, padx=5, anchor="w")
+
+    def load_note(filename, dialog):
+        with open(f"saves/{config.current_user}/notes/{filename}", "r", encoding='utf-8') as f:
+            content = f.read()
+        note_text.delete("1.0", "end")
+        note_text.insert("1.0", content)
+        old_path = f"saves/{config.current_user}/notes/{filename}"
+        new_filename = f"{int(time.time())}_{filename.split('_', 1)[1]}"
+        new_path = f"saves/{config.current_user}/notes/{new_filename}"
+        os.rename(old_path, new_path)
+        dialog.destroy()
+
+    def delete_notes():
+        delete_dialog = ctk.CTkToplevel(fg_color=colors["background"])
+        delete_dialog.title("Xóa ghi chú")
+        delete_dialog.geometry("300x400")
+        delete_dialog.resizable(False, False)
+        delete_dialog.grab_set()
+        delete_dialog.transient(frame)
+        note_label = ctk.CTkLabel(delete_dialog, text="Chọn ghi chú cần xóa:", font=("Helvetica", 16), text_color=colors["text_color"])
+        note_label.pack(pady=10)
+        scroll_frame = ctk.CTkScrollableFrame(delete_dialog, width=270, height=280, fg_color=colors["background"])
+        scroll_frame.pack()
+        checkbox_var = {}
+        note_files = os.listdir(f"saves/{config.current_user}/notes")
+        for file in note_files:
+            name = file.split('_', 1)[1].replace(".txt", "")
+            var = ctk.BooleanVar()
+            checkbox = ctk.CTkCheckBox(scroll_frame, text=name, variable=var, onvalue=True, offvalue=False, command=lambda file=file: checkbox_var.update({file: var}), text_color=colors["text_color"])
+            checkbox.pack(anchor="w", pady=5)
+            checkbox_var[file] = var
+        confirm_button = ctk.CTkButton(delete_dialog, text="Xác nhận", command=lambda: confirm_delete())
+        confirm_button.pack(pady=10)
+        def confirm_delete():
+            selected_notes = [note for note, var in checkbox_var.items() if var.get()]
+            if selected_notes:
+                for note in selected_notes:
+                    note_path = os.path.join(f"saves/{config.current_user}/notes", note)
+                    if os.path.exists(note_path):
+                        os.remove(note_path)
+                delete_dialog.destroy()
+                restart_app(frame)
+
+# ================================================================================================================================================
 
 def setting_frame_function(frame):
     frame.grid_columnconfigure(1, weight=1)
@@ -133,6 +393,8 @@ def apply_config(config_name, choice, frame):
         old_value = config.theme_using
     elif (config_name == "current_user"):
         old_value = config.current_user
+        global current_schedule
+        current_schedule = get_current_schedule()
 
     if (old_value == choice):
         return
@@ -171,6 +433,14 @@ def add_user(frame):
                 os.makedirs(child_folders)
                 child_folders = os.path.join(user_folder, "notes")
                 os.makedirs(child_folders)
+                
+                # Switch to new user
+                with open("misc/configuration.py", "r") as config_file:
+                    content = config_file.read()
+                new_content = content.replace(f"current_user = '{config.current_user}'", f"current_user = '{user_name}'")
+                with open("misc/configuration.py", "w") as config_file:
+                    config_file.write(new_content)
+                    
                 new_user_dialog.destroy()
                 restart_app(frame)
             else:
@@ -230,4 +500,104 @@ def restart_app(frame):
     subprocess.Popen([python_executable, script_path])
     frame.winfo_toplevel().destroy()
 
+# ==================================================================================================================
 
+def pomodoro_frame_function(frame):
+    frame.grid_columnconfigure(0, weight=1)
+    frame.grid_rowconfigure(0, weight=2)
+    frame.grid_rowconfigure(1, weight=1)
+    frame.grid_rowconfigure(2, weight=0)
+    frame.grid_rowconfigure(3, weight=2)
+
+    time_remaining = ctk.StringVar(value="25:00")
+    timer_label = ctk.CTkLabel(frame, textvariable=time_remaining, font=("Helvetica", 120), text_color=colors["text_color"])
+    timer_label.grid(row=1, column=0)
+
+    buttons_frame = ctk.CTkFrame(frame, fg_color="transparent")
+    buttons_frame.grid(row=2, column=0, pady=(0, 20))
+
+    start_button = ctk.CTkButton(buttons_frame, text="Start", width=150, font=("Arial", 20), text_color=colors["text_color"])
+    start_button.grid(row=0, column=0, padx=10)
+
+    reset_button = ctk.CTkButton(buttons_frame, text="Reset", width=150, font=("Arial", 20), text_color=colors["text_color"])
+    reset_button.grid(row=0, column=1, padx=10)
+
+    timer_running = False
+    is_focus_time = True
+    remaining_seconds = 25 * 60
+
+    def create_overlay():
+        main_window = frame.winfo_toplevel()
+        overlay = ctk.CTkFrame(main_window, fg_color=colors["focus_mode"])
+        overlay.place(relx=0, rely=0, relwidth=1, relheight=1)
+        overlay.lift()
+        
+        overlay.grid_columnconfigure(0, weight=1)
+        overlay.grid_rowconfigure(0, weight=2)
+        overlay.grid_rowconfigure(1, weight=1)
+        overlay.grid_rowconfigure(2, weight=0)
+        overlay.grid_rowconfigure(3, weight=2)
+
+        overlay_timer = ctk.CTkLabel(overlay, textvariable=time_remaining, font=("Helvetica", 120), text_color=colors["focus_mode_text"])
+        overlay_timer.grid(row=1, column=0)
+
+        overlay_buttons = ctk.CTkFrame(overlay, fg_color="transparent")
+        overlay_buttons.grid(row=2, column=0, pady=(0, 20))
+
+        overlay_pause = ctk.CTkButton(overlay_buttons, text="Pause", width=150, font=("Arial", 20), text_color=colors["text_color"], command=lambda: toggle_timer(overlay))
+        overlay_pause.grid(row=0, column=0, padx=10)
+
+        overlay_reset = ctk.CTkButton(overlay_buttons, text="Reset", width=150, font=("Arial", 20), text_color=colors["text_color"], command=lambda: reset_timer(overlay))
+        overlay_reset.grid(row=0, column=1, padx=10)
+
+        return overlay
+
+    def update_timer(overlay=None):
+        nonlocal remaining_seconds, timer_running
+        if timer_running and remaining_seconds > 0:
+            minutes = remaining_seconds // 60
+            seconds = remaining_seconds % 60
+            time_remaining.set(f"{minutes:02d}:{seconds:02d}")
+            remaining_seconds -= 1
+            frame.after(1000, lambda: update_timer(overlay))
+        elif timer_running and remaining_seconds <= 0:
+            switch_mode(overlay)
+
+    def switch_mode(overlay=None):
+        nonlocal is_focus_time, remaining_seconds
+        is_focus_time = not is_focus_time
+        remaining_seconds = 25 * 60 if is_focus_time else 5 * 60
+        update_timer(overlay)
+
+    def toggle_timer(overlay=None):
+        nonlocal timer_running
+        timer_running = not timer_running
+        if overlay:
+            if not timer_running:
+                overlay.destroy()
+            else:
+                for widget in overlay.winfo_children():
+                    if isinstance(widget, ctk.CTkFrame):
+                        for button in widget.winfo_children():
+                            if isinstance(button, ctk.CTkButton) and button.cget("text") in ["Pause", "Start"]:
+                                button.configure(text="Start" if not timer_running else "Pause")
+        if timer_running:
+            update_timer(overlay)
+
+    def reset_timer(overlay=None):
+        nonlocal timer_running, remaining_seconds, is_focus_time
+        timer_running = False
+        is_focus_time = True
+        remaining_seconds = 25 * 60
+        time_remaining.set("25:00")
+        if overlay:
+            overlay.destroy()
+        start_button.configure(text="Start")
+
+    def start_overlay():
+        if not timer_running:
+            overlay = create_overlay()
+            toggle_timer(overlay)
+
+    start_button.configure(command=start_overlay)
+    reset_button.configure(command=reset_timer)
