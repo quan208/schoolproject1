@@ -24,6 +24,45 @@ THEMES = {
         "note_background": "#ffffff",
         "focus_mode": "#000000",
         "focus_mode_text": "#ffffff"
+    },
+    "vintage": {
+        "app_theme": "light",
+        "background": "#FDF7E4",
+        "nav_bar": "#DED0B6",
+        "text_color": "#000000",
+        "alt_text_color": "#000000",
+        "dropdown_hover_color": "#FAEED1",
+        "tomorrow_schedule": "#7df19a",
+        "day_after_tomorrow_schedule": "#ffe680",
+        "note_background": "#FAEED1",
+        "focus_mode": "#000000",
+        "focus_mode_text": "#ffffff"
+    },
+    "pink heart": {
+        "app_theme": "light",
+        "background": "#FFE4E1",
+        "nav_bar": "#FFC0CB",
+        "text_color": "#000000",
+        "alt_text_color": "#000000",
+        "dropdown_hover_color": "#FFB6C1",
+        "tomorrow_schedule": "#7df19a",
+        "day_after_tomorrow_schedule": "#ffe680",
+        "note_background": "#FFB6C1",
+        "focus_mode": "#000000",
+        "focus_mode_text": "#ffffff"
+    },
+    "blue sky": {
+        "app_theme": "light",
+        "background": "#E6E6FA",
+        "nav_bar": "#ADD8E6",
+        "text_color": "#000000",
+        "alt_text_color": "#000000",
+        "dropdown_hover_color": "#B0C4DE",
+        "tomorrow_schedule": "#7df19a",
+        "day_after_tomorrow_schedule": "#ffe680",
+        "note_background": "#B0C4DE",
+        "focus_mode": "#000000",
+        "focus_mode_text": "#ffffff"
     }
 }
 

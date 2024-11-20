@@ -1,5 +1,7 @@
 import customtkinter as ctk
 import os, shutil
+import random
+import webbrowser
 import time
 from datetime import datetime
 from themes import get_theme, THEMES
@@ -37,6 +39,33 @@ def home_frame_function(frame):
         clock_label.configure(text=current_time)
         clock_label.after(1000, update_time)
 
+    motivational_quotes = [
+        {"quote": "The only way to do great work is to love what you do.", "source": "Steve Jobs", "link": "https://www.goodreads.com/quotes/772887-the-only-way-to-do-great-work-is-to-love"},
+        {"quote": "Success is not the key to happiness. Happiness is the key to success.", "source": "Albert Schweitzer", "link": "https://www.brainyquote.com/quotes/albert_schweitzer_155988"},
+        {"quote": "It does not matter how slowly you go as long as you do not stop.", "source": "Confucius", "link": "https://www.brainyquote.com/quotes/confucius_140908"},
+        {"quote": "When something is important enough, you do it even if the odds are not in your favor.", "source": "Elon Musk", "link": "https://www.brainyquote.com/quotes/elon_musk_567219"},
+        {"quote": "Start where you are. Use what you have. Do what you can.", "source": "Arthur Ashe", "link": "https://www.brainyquote.com/quotes/arthur_ashe_371527"},
+        {"quote": "Good, better, best. Never let it rest. 'Til your good is better and your better is best.", "source": "St. Jerome", "link": "https://www.brainyquote.com/quotes/st_jerome_389605"},
+        {"quote": "Everything you've ever wanted is on the other side of fear.", "source": "George Addair", "link": "https://www.brainyquote.com/quotes/george_addair_175673"}
+    ]
+
+    quote_text = ctk.StringVar()
+    quote_text.set("Nhấn vào đây để xem nguồn")
+    quote_label = ctk.CTkLabel(frame, textvariable=quote_text, font=("Helvetica", 20), text_color="blue")
+    quote_label.grid(row=2, column=0)
+
+    def show_random_quote():
+        quote = random.choice(motivational_quotes)
+        quote_text.set(f'"{quote["quote"]}" - {quote["source"]}')
+        quote_label.unbind("<Button-1>")
+        quote_label.bind("<Button-1>", lambda e: open_link(quote["link"]))
+
+    def open_link(url):
+        webbrowser.open(url)
+        show_random_quote()
+
+    quote_label.bind("<Button-1>", lambda e: show_random_quote())
+    show_random_quote()
     update_time()
     frame.grid_columnconfigure(0, weight=1)
     frame.grid_rowconfigure(0, weight=1)
@@ -47,7 +76,8 @@ def schedule_frame_function(frame):
     frame.grid_columnconfigure(0, weight=1)
     frame.grid_rowconfigure(1, weight=1)
 
-    ctk.CTkLabel(frame, text=f"Tên TKB: {current_schedule}", font=("Arial", 20), text_color=colors["text_color"]).grid(row=0, column=0, sticky="nw")
+    schedule_name = "" if current_schedule is None else current_schedule.split('_', 1)[1].replace('.txt', '')
+    ctk.CTkLabel(frame, text=f"Tên TKB: {schedule_name}", font=("Arial", 20), text_color=colors["text_color"]).grid(row=0, column=0, sticky="nw")
 
     schedule_table = ctk.CTkFrame(frame, width=1000, height=600, fg_color="transparent")
     schedule_table.grid(row=1, column=0)
@@ -145,12 +175,12 @@ def schedule_frame_function(frame):
     def create_new_schedule():
         new_schedule_window = ctk.CTkToplevel(fg_color=colors["background"])
         new_schedule_window.title("Tạo thời khóa biểu mới")
-        new_schedule_window.geometry("680x500")
+        new_schedule_window.geometry("660x500")
         new_schedule_window.resizable(False, False)
         new_schedule_window.attributes("-topmost", True)
 
         schedule_entries = []
-        new_schedule_name = ctk.CTkEntry(new_schedule_window, width=150, fg_color=colors["background"], text_color=colors["text_color"])
+        new_schedule_name = ctk.CTkEntry(new_schedule_window, width=150, fg_color=colors["background"], text_color=colors["text_color"], placeholder_text="Nhập tên TKB mới")
         new_schedule_name.grid(row=11, column=0, columnspan=6, padx=5, pady=5)
     
         weekdays = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7"] 
@@ -266,6 +296,7 @@ def get_current_schedule():
 current_schedule = get_current_schedule()
 
 # ================================================================================================================================================
+
 def note_frame_function(frame):
     frame.grid_columnconfigure(0, weight=1)
     frame.grid_rowconfigure(2, weight=1)
@@ -451,7 +482,7 @@ def delete_user(frame):
     if (len(os.listdir("saves")) <= 1):
         error_dialog = ctk.CTkToplevel(fg_color=colors["background"])
         error_dialog.title("Lỗi")
-        error_dialog.geometry("300x100")
+        error_dialog.geometry("300x70")
         error_dialog.resizable(False, False)
         error_dialog.grab_set()
         error_dialog.transient(frame)
@@ -493,11 +524,16 @@ def delete_user(frame):
             delete_dialog.destroy()
             restart_app(frame)              
 
-def restart_app(frame):
+def restart_app(frame, show_dialog=False):
     import sys, subprocess
     python_executable = sys.executable
     script_path = sys.argv[0]
-    subprocess.Popen([python_executable, script_path])
+    
+    if not show_dialog:
+        subprocess.Popen([python_executable, script_path, "--restart"])
+    else:
+        subprocess.Popen([python_executable, script_path])
+        
     frame.winfo_toplevel().destroy()
 
 # ==================================================================================================================
@@ -522,9 +558,13 @@ def pomodoro_frame_function(frame):
     reset_button = ctk.CTkButton(buttons_frame, text="Reset", width=150, font=("Arial", 20), text_color=colors["text_color"])
     reset_button.grid(row=0, column=1, padx=10)
 
+    switch_button = ctk.CTkButton(buttons_frame, text="Switch Mode", width=150, font=("Arial", 20), text_color=colors["text_color"])
+    switch_button.grid(row=0, column=2, padx=10)
+
     timer_running = False
     is_focus_time = True
     remaining_seconds = 25 * 60
+    current_overlay = None
 
     def create_overlay():
         main_window = frame.winfo_toplevel()
@@ -550,6 +590,9 @@ def pomodoro_frame_function(frame):
         overlay_reset = ctk.CTkButton(overlay_buttons, text="Reset", width=150, font=("Arial", 20), text_color=colors["text_color"], command=lambda: reset_timer(overlay))
         overlay_reset.grid(row=0, column=1, padx=10)
 
+        overlay_switch = ctk.CTkButton(overlay_buttons, text="Switch Mode", width=150, font=("Arial", 20), text_color=colors["text_color"], command=lambda: manual_switch(overlay))
+        overlay_switch.grid(row=0, column=2, padx=10)
+
         return overlay
 
     def update_timer(overlay=None):
@@ -567,14 +610,29 @@ def pomodoro_frame_function(frame):
         nonlocal is_focus_time, remaining_seconds
         is_focus_time = not is_focus_time
         remaining_seconds = 25 * 60 if is_focus_time else 5 * 60
-        update_timer(overlay)
+        if not is_focus_time and overlay:
+            overlay.destroy()
+        update_timer(overlay if is_focus_time else None)
+
+    def manual_switch(overlay=None):
+        nonlocal is_focus_time, remaining_seconds, timer_running, current_overlay
+        is_focus_time = not is_focus_time
+        remaining_seconds = 25 * 60 if is_focus_time else 5 * 60
+        time_remaining.set("25:00" if is_focus_time else "05:00")
+        if overlay:
+            overlay.destroy()
+        if is_focus_time and timer_running:
+            current_overlay = create_overlay()
+        timer_running = False
+        start_button.configure(text="Start")
 
     def toggle_timer(overlay=None):
-        nonlocal timer_running
+        nonlocal timer_running, current_overlay
         timer_running = not timer_running
         if overlay:
             if not timer_running:
                 overlay.destroy()
+                current_overlay = None
             else:
                 for widget in overlay.winfo_children():
                     if isinstance(widget, ctk.CTkFrame):
@@ -585,19 +643,70 @@ def pomodoro_frame_function(frame):
             update_timer(overlay)
 
     def reset_timer(overlay=None):
-        nonlocal timer_running, remaining_seconds, is_focus_time
+        nonlocal timer_running, remaining_seconds, is_focus_time, current_overlay
         timer_running = False
         is_focus_time = True
         remaining_seconds = 25 * 60
         time_remaining.set("25:00")
         if overlay:
             overlay.destroy()
+            current_overlay = None
         start_button.configure(text="Start")
 
     def start_overlay():
-        if not timer_running:
-            overlay = create_overlay()
-            toggle_timer(overlay)
+        nonlocal current_overlay
+        if not timer_running and is_focus_time:
+            current_overlay = create_overlay()
+            toggle_timer(current_overlay)
+        elif not timer_running and not is_focus_time:
+            toggle_timer(None)
 
     start_button.configure(command=start_overlay)
     reset_button.configure(command=reset_timer)
+    switch_button.configure(command=lambda: manual_switch(current_overlay))
+
+# MISC FUNCTIONS
+
+def show_tomorrow_subjects():
+    import sys
+    if "--restart" in sys.argv:
+        return
+        
+    tomorrow = (datetime.now().weekday() + 1) % 7
+    if tomorrow == 6: 
+        return
+        
+    subjects = []
+    for i in range(10):
+        subject = schedule_data[i][tomorrow]
+        if subject:
+            subjects.append(f"Tiết {i+1}: {subject}")
+            
+    dialog = ctk.CTkToplevel()
+    dialog.title("Môn học ngày mai")
+    dialog.attributes('-topmost', True)
+    
+    if subjects:
+        label = ctk.CTkLabel(dialog, text="Các môn học cho ngày mai:", font=("Arial", 20))
+        label.pack(pady=20)
+        
+        for subject in subjects:
+            subject_label = ctk.CTkLabel(dialog, text=subject, font=("Arial", 16))
+            subject_label.pack(pady=5)
+    else:
+        label = ctk.CTkLabel(dialog, text="Không có môn học nào cho ngày mai", font=("Arial", 20))
+        label.pack(pady=20)
+            
+    close_button = ctk.CTkButton(dialog, text="Đóng", command=dialog.destroy)
+    close_button.pack(pady=20)
+
+    dialog.update()
+    height = dialog.winfo_reqheight()
+    width = 400
+    
+    screen_width = dialog.winfo_screenwidth()
+    screen_height = dialog.winfo_screenheight()
+    x = (screen_width - width) // 2
+    y = (screen_height - height) // 2
+    
+    dialog.geometry(f"{width}x{height}+{x}+{y}")

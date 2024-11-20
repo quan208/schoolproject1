@@ -1,8 +1,9 @@
 import customtkinter as ctk
-from PIL import Image, ImageTk
+from PIL import Image
 from themes import get_theme
-from function import home_frame_function, schedule_frame_function, note_frame_function, pomodoro_frame_function, setting_frame_function
+from function import home_frame_function, schedule_frame_function, note_frame_function, pomodoro_frame_function, setting_frame_function, show_tomorrow_subjects
 import misc.configuration as config
+import os
 
 colors = get_theme(config.theme_using)
 
@@ -20,6 +21,7 @@ class MainView(ctk.CTk):
         self.attributes("-topmost", False)
         self.lift()
         self.focus_force()
+        self.iconbitmap(os.path.join(os.path.dirname(__file__), "images/app_icon.ico"))
 
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()

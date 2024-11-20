@@ -1,2 +1,2 @@
-theme_using = 'dark'
+theme_using = 'light'
 current_user = 'default'
