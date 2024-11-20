@@ -682,19 +682,19 @@ def show_tomorrow_subjects():
         if subject:
             subjects.append(f"Tiết {i+1}: {subject}")
             
-    dialog = ctk.CTkToplevel()
+    dialog = ctk.CTkToplevel(fg_color=colors["background"])
     dialog.title("Môn học ngày mai")
     dialog.attributes('-topmost', True)
     
     if subjects:
-        label = ctk.CTkLabel(dialog, text="Các môn học cho ngày mai:", font=("Arial", 20))
+        label = ctk.CTkLabel(dialog, text="Các môn học cho ngày mai:", font=("Arial", 20), text_color=colors["text_color"])
         label.pack(pady=20)
         
         for subject in subjects:
-            subject_label = ctk.CTkLabel(dialog, text=subject, font=("Arial", 16))
+            subject_label = ctk.CTkLabel(dialog, text=subject, font=("Arial", 16), text_color=colors["text_color"])
             subject_label.pack(pady=5)
     else:
-        label = ctk.CTkLabel(dialog, text="Không có môn học nào cho ngày mai", font=("Arial", 20))
+        label = ctk.CTkLabel(dialog, text="Không có môn học nào cho ngày mai", font=("Arial", 20), text_color=colors["text_color"])
         label.pack(pady=20)
             
     close_button = ctk.CTkButton(dialog, text="Đóng", command=dialog.destroy)

@@ -21,7 +21,6 @@ class MainView(ctk.CTk):
         self.attributes("-topmost", False)
         self.lift()
         self.focus_force()
-        self.iconbitmap(os.path.join(os.path.dirname(__file__), "images/app_icon.ico"))
 
         screen_width = self.winfo_screenwidth()
         screen_height = self.winfo_screenheight()
