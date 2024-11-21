@@ -3,11 +3,11 @@ import os, shutil
 import random
 import webbrowser
 import time
+import json, sys
 from datetime import datetime
 from themes import get_theme, THEMES
-import misc.configuration as config
 
-colors = get_theme(config.theme_using)
+
 current_schedule = ""
 schedule_data = [["", "", "", "", "", ""],
                   ["", "", "", "", "", ""],
@@ -29,6 +29,18 @@ raw_schedule_data = [["", "", "", "", "", ""],
                   ["", "", "", "", "", ""],
                   ["", "", "", "", "", ""],
                   ["", "", "", "", "", ""]]
+
+def load_config(file_path):
+    with open(file_path, 'r') as f:
+        return json.load(f)
+    
+def get_config_path(file_name):
+    return file_name
+    
+config_path = get_config_path("misc/configuration.json")
+config = load_config(config_path)
+
+colors = get_theme(config["theme_using"])
 
 def home_frame_function(frame):
     clock_label = ctk.CTkLabel(frame, text="", font=("Helvetica", 245), fg_color="transparent", text_color=colors["text_color"])
@@ -113,15 +125,15 @@ def schedule_frame_function(frame):
         scroll_frame.pack()
 
         checkbox_var = {}
-        schedule_files = os.listdir(f"saves/{config.current_user}/schedules")
+        schedule_files = os.listdir(f"saves/{config['current_user']}/schedules")
 
         for file in schedule_files:
             name = file.split('_', 1)[1].replace(".txt", "")
             var = ctk.BooleanVar()
-            checkbox = ctk.CTkCheckBox(scroll_frame, text=name, variable=var, onvalue=True, offvalue=False, command=lambda file=file: checkbox_var.update({file: var}), text_color=colors["text_color"])
+            checkbox = ctk.CTkCheckBox(scroll_frame, text=name, variable=var, onvalue=True, offvalue=False, text_color=colors["text_color"])
             checkbox.pack(anchor="w", pady=5)
             checkbox_var[file] = var
-        
+
         confirm_button = ctk.CTkButton(delete_dialog, text="Xác nhận", command=lambda: confirm_delete())
         confirm_button.pack(pady=10)
 
@@ -129,12 +141,11 @@ def schedule_frame_function(frame):
             selected_schedules = [schedule for schedule, var in checkbox_var.items() if var.get()]
             if selected_schedules:
                 for schedule in selected_schedules:
-                    schedule_path = os.path.join(f"saves/{config.current_user}/schedules", schedule)
+                    schedule_path = os.path.join(f"saves/{config['current_user']}/schedules", schedule)
                     if os.path.exists(schedule_path):
                         os.remove(schedule_path)
                 delete_dialog.destroy()
                 restart_app(frame)
-    
 
     def load_schedule_dialog():
         load_dialog = ctk.CTkToplevel(fg_color=colors["background"])
@@ -149,7 +160,7 @@ def schedule_frame_function(frame):
         scroll_frame = ctk.CTkScrollableFrame(load_dialog, width=350, height=400, fg_color=colors['nav_bar'])
         scroll_frame.pack(pady=10)
         
-        schedule_files = os.listdir(f"saves/{config.current_user}/schedules")
+        schedule_files = os.listdir(f"saves/{config['current_user']}/schedules")
         for file in schedule_files:
             name = file.split('_', 1)[1].replace(".txt", "")
             btn = ctk.CTkButton(
@@ -164,9 +175,9 @@ def schedule_frame_function(frame):
             btn.pack(pady=5, fill="x")
             
     def select_schedule(filename, dialog):
-        old_path = f"saves/{config.current_user}/schedules/{filename}"
+        old_path = f"saves/{config['current_user']}/schedules/{filename}"
         new_filename = f"{int(time.time())}_{filename.split('_', 1)[1]}"
-        new_path = f"saves/{config.current_user}/schedules/{new_filename}"
+        new_path = f"saves/{config['current_user']}/schedules/{new_filename}"
     
         os.rename(old_path, new_path)
         dialog.destroy()
@@ -200,7 +211,7 @@ def schedule_frame_function(frame):
             if new_name:
                 timestamp = str(int(time.time()))
                 filename = f"{timestamp}_{new_name}.txt"
-                with open(f"saves/{config.current_user}/schedules/{filename}", "w+", encoding='utf-8') as f:
+                with open(f"saves/{config['current_user']}/schedules/{filename}", "w+", encoding='utf-8') as f:
                     for row in range(10): 
                         line = []
                         for col in range(6):  
@@ -243,12 +254,13 @@ def load_schedule_subjects(frame):
     raw_schedule_data = [["", "", "", "", "", ""] for _ in range(10)]
     
     if current_schedule != None:
-        with open(f"saves/{config.current_user}/schedules/{current_schedule}", "r", encoding='utf-8') as f:
+        with open(f"saves/{config['current_user']}/schedules/{current_schedule}", "r", encoding='utf-8') as f:
             for i, line in enumerate(f.readlines()):
                 temp_ls = line.strip().split(" ")
                 for j, subject in enumerate(temp_ls):
-                    if (subject != '-'):
-                        schedule_data[i][j] = subject
+                    if j < 6 and i < 10:
+                        if (subject != '-'):
+                            schedule_data[i][j] = subject
     else:
         schedule_data = raw_schedule_data.copy()
 
@@ -285,7 +297,7 @@ def load_schedule_subjects(frame):
                 ctk.CTkLabel(frame, text=schedule_data[i-3][j-3], font=("Arial", 18), text_color=colors["text_color"]).grid(row=i, column=j-1, padx=8, pady=15, sticky="nsew")
     
 def get_current_schedule():
-    schedule_dir = f"saves/{config.current_user}/schedules"
+    schedule_dir = f"saves/{config['current_user']}/schedules"
     files = os.listdir(schedule_dir)
     if files:
         sorted_files = sorted(files, key=lambda x: int(x.split('_')[0]), reverse=True)
@@ -321,7 +333,7 @@ def note_frame_function(frame):
         if name and content:
             timestamp = str(int(time.time()))
             filename = f"{timestamp}_{name}.txt"
-            with open(f"saves/{config.current_user}/notes/{filename}", "w+", encoding='utf-8') as f:
+            with open(f"saves/{config['current_user']}/notes/{filename}", "w+", encoding='utf-8') as f:
                 f.write(content)
             restart_app(frame)
 
@@ -333,9 +345,9 @@ def note_frame_function(frame):
         load_dialog.grab_set()
         note_label = ctk.CTkLabel(load_dialog, text="Chọn ghi chú:", font=("Arial", 16), text_color=colors["text_color"])
         note_label.pack(pady=10)
-        scroll_frame = ctk.CTkScrollableFrame(load_dialog, width=350, height=400, fg_color="transparent")
+        scroll_frame = ctk.CTkScrollableFrame(load_dialog, width=350, height=400, fg_color=colors['nav_bar'])
         scroll_frame.pack(pady=10)
-        note_files = os.listdir(f"saves/{config.current_user}/notes")
+        note_files = os.listdir(f"saves/{config['current_user']}/notes")
         for file in note_files:
             name = file.split('_', 1)[1].replace(".txt", "")
             btn = ctk.CTkButton(
@@ -351,13 +363,13 @@ def note_frame_function(frame):
             btn.pack(pady=5, padx=5, anchor="w")
 
     def load_note(filename, dialog):
-        with open(f"saves/{config.current_user}/notes/{filename}", "r", encoding='utf-8') as f:
+        with open(f"saves/{config['current_user']}/notes/{filename}", "r", encoding='utf-8') as f:
             content = f.read()
         note_text.delete("1.0", "end")
         note_text.insert("1.0", content)
-        old_path = f"saves/{config.current_user}/notes/{filename}"
+        old_path = f"saves/{config['current_user']}/notes/{filename}"
         new_filename = f"{int(time.time())}_{filename.split('_', 1)[1]}"
-        new_path = f"saves/{config.current_user}/notes/{new_filename}"
+        new_path = f"saves/{config['current_user']}/notes/{new_filename}"
         os.rename(old_path, new_path)
         dialog.destroy()
 
@@ -373,7 +385,7 @@ def note_frame_function(frame):
         scroll_frame = ctk.CTkScrollableFrame(delete_dialog, width=270, height=280, fg_color=colors["background"])
         scroll_frame.pack()
         checkbox_var = {}
-        note_files = os.listdir(f"saves/{config.current_user}/notes")
+        note_files = os.listdir(f"saves/{config['current_user']}/notes")
         for file in note_files:
             name = file.split('_', 1)[1].replace(".txt", "")
             var = ctk.BooleanVar()
@@ -386,7 +398,7 @@ def note_frame_function(frame):
             selected_notes = [note for note, var in checkbox_var.items() if var.get()]
             if selected_notes:
                 for note in selected_notes:
-                    note_path = os.path.join(f"saves/{config.current_user}/notes", note)
+                    note_path = os.path.join(f"saves/{config['current_user']}/notes", note)
                     if os.path.exists(note_path):
                         os.remove(note_path)
                 delete_dialog.destroy()
@@ -402,7 +414,7 @@ def setting_frame_function(frame):
 
     theme_option = list(THEMES.keys())
     theme_dropdown = ctk.CTkOptionMenu(frame, values=theme_option, command=lambda choice: apply_config("theme_using", choice, frame), dropdown_fg_color=colors["background"], dropdown_text_color=colors["text_color"], dropdown_hover_color=colors["dropdown_hover_color"])
-    theme_dropdown.set(config.theme_using)
+    theme_dropdown.set(config['theme_using'])
     theme_dropdown.grid(row=1, column=0, sticky="n", padx=[10, 0])
 
     user_label = ctk.CTkLabel(frame, text="Chọn người dùng:", font=("Arial", 16), text_color=colors["text_color"])
@@ -410,7 +422,7 @@ def setting_frame_function(frame):
 
     user_option = [folder for folder in os.listdir("saves") if os.path.isdir(os.path.join("saves", folder))]
     user_dropdown = ctk.CTkOptionMenu(frame, values=user_option, command=lambda choice: apply_config("current_user", choice, frame), dropdown_fg_color=colors["background"], dropdown_text_color=colors["text_color"], dropdown_hover_color=colors["dropdown_hover_color"])
-    user_dropdown.set(config.current_user)
+    user_dropdown.set(config['current_user'])
     user_dropdown.grid(row=3, column=0, sticky="n", padx=[10, 0])
 
     add_user_button = ctk.CTkButton(frame, text="Thêm người dùng", command=lambda: add_user(frame))
@@ -421,20 +433,22 @@ def setting_frame_function(frame):
 
 def apply_config(config_name, choice, frame):
     if (config_name == "theme_using"):
-        old_value = config.theme_using
+        old_value = config['theme_using']
     elif (config_name == "current_user"):
-        old_value = config.current_user
+        old_value = config['current_user']
         global current_schedule
         current_schedule = get_current_schedule()
 
     if (old_value == choice):
         return
 
-    with open("misc/configuration.py", "r") as config_file:
-        content = config_file.read()
-    new_content = content.replace(f"{config_name} = '{old_value}'", f"{config_name} = '{choice}'")
-    with open("misc/configuration.py", "w") as config_file:
-        config_file.write(new_content)
+    with open("misc/configuration.json", "r") as f:
+        content = json.load(f)
+    
+    content[config_name] = choice
+
+    with open("misc/configuration.json", "w") as f:
+        json.dump(content, f, indent=4)
     
     restart_app(frame)
 
@@ -465,13 +479,12 @@ def add_user(frame):
                 child_folders = os.path.join(user_folder, "notes")
                 os.makedirs(child_folders)
                 
-                # Switch to new user
-                with open("misc/configuration.py", "r") as config_file:
-                    content = config_file.read()
-                new_content = content.replace(f"current_user = '{config.current_user}'", f"current_user = '{user_name}'")
-                with open("misc/configuration.py", "w") as config_file:
-                    config_file.write(new_content)
-                    
+                with open("misc/configuration.json", "r") as config_file:
+                    content = json.load(config_file)
+                content['current_user'] = user_name
+                with open("misc/configuration.json", "w") as config_file:
+                    json.dump(content, config_file, indent=4)
+
                 new_user_dialog.destroy()
                 restart_app(frame)
             else:
@@ -499,7 +512,7 @@ def delete_user(frame):
     user_label = ctk.CTkLabel(delete_dialog, text="Chọn người dùng cần xóa:", font=("Helvetica", 16), text_color=colors["text_color"])
     user_label.pack(pady=10)
 
-    users_option = [folder for folder in os.listdir("saves") if os.path.isdir(os.path.join("saves", folder)) and folder != config.current_user]
+    users_option = [folder for folder in os.listdir("saves") if os.path.isdir(os.path.join("saves", folder)) and folder != config['current_user']]
     scroll_frame = ctk.CTkScrollableFrame(delete_dialog, width=270, height=280, fg_color=colors["background"])
     scroll_frame.pack()
 
@@ -524,17 +537,22 @@ def delete_user(frame):
             delete_dialog.destroy()
             restart_app(frame)              
 
-def restart_app(frame, show_dialog=False):
-    import sys, subprocess
-    python_executable = sys.executable
-    script_path = sys.argv[0]
-    
-    if not show_dialog:
-        subprocess.Popen([python_executable, script_path, "--restart"])
-    else:
-        subprocess.Popen([python_executable, script_path])
-        
-    frame.winfo_toplevel().destroy()
+def restart_app(frame):
+    import sys
+    import subprocess
+
+    try:
+        executable_path = sys.executable
+        script_path = 'app.py'
+        if getattr(sys, 'frozen', False): 
+            subprocess.Popen([executable_path]) 
+        else:  
+            subprocess.Popen([executable_path, script_path])
+
+    except Exception as e:
+        print(f"Error restarting app: {e}")
+    finally:
+        sys.exit(0)
 
 # ==================================================================================================================
 
@@ -595,6 +613,7 @@ def pomodoro_frame_function(frame):
 
         return overlay
 
+
     def update_timer(overlay=None):
         nonlocal remaining_seconds, timer_running
         if timer_running and remaining_seconds > 0:
@@ -602,7 +621,7 @@ def pomodoro_frame_function(frame):
             seconds = remaining_seconds % 60
             time_remaining.set(f"{minutes:02d}:{seconds:02d}")
             remaining_seconds -= 1
-            frame.after(1000, lambda: update_timer(overlay))
+            frame.timer_id = frame.after(1000, lambda: update_timer(overlay))
         elif timer_running and remaining_seconds <= 0:
             switch_mode(overlay)
 
@@ -629,6 +648,10 @@ def pomodoro_frame_function(frame):
     def toggle_timer(overlay=None):
         nonlocal timer_running, current_overlay
         timer_running = not timer_running
+
+        if hasattr(frame, 'timer_id'):
+            frame.after_cancel(frame.timer_id)
+
         if overlay:
             if not timer_running:
                 overlay.destroy()
@@ -641,7 +664,6 @@ def pomodoro_frame_function(frame):
                                 button.configure(text="Start" if not timer_running else "Pause")
         if timer_running:
             update_timer(overlay)
-
     def reset_timer(overlay=None):
         nonlocal timer_running, remaining_seconds, is_focus_time, current_overlay
         timer_running = False
@@ -666,47 +688,3 @@ def pomodoro_frame_function(frame):
     switch_button.configure(command=lambda: manual_switch(current_overlay))
 
 # MISC FUNCTIONS
-
-def show_tomorrow_subjects():
-    import sys
-    if "--restart" in sys.argv:
-        return
-        
-    tomorrow = (datetime.now().weekday() + 1) % 7
-    if tomorrow == 6: 
-        return
-        
-    subjects = []
-    for i in range(10):
-        subject = schedule_data[i][tomorrow]
-        if subject:
-            subjects.append(f"Tiết {i+1}: {subject}")
-            
-    dialog = ctk.CTkToplevel(fg_color=colors["background"])
-    dialog.title("Môn học ngày mai")
-    dialog.attributes('-topmost', True)
-    
-    if subjects:
-        label = ctk.CTkLabel(dialog, text="Các môn học cho ngày mai:", font=("Arial", 20), text_color=colors["text_color"])
-        label.pack(pady=20)
-        
-        for subject in subjects:
-            subject_label = ctk.CTkLabel(dialog, text=subject, font=("Arial", 16), text_color=colors["text_color"])
-            subject_label.pack(pady=5)
-    else:
-        label = ctk.CTkLabel(dialog, text="Không có môn học nào cho ngày mai", font=("Arial", 20), text_color=colors["text_color"])
-        label.pack(pady=20)
-            
-    close_button = ctk.CTkButton(dialog, text="Đóng", command=dialog.destroy)
-    close_button.pack(pady=20)
-
-    dialog.update()
-    height = dialog.winfo_reqheight()
-    width = 400
-    
-    screen_width = dialog.winfo_screenwidth()
-    screen_height = dialog.winfo_screenheight()
-    x = (screen_width - width) // 2
-    y = (screen_height - height) // 2
-    
-    dialog.geometry(f"{width}x{height}+{x}+{y}")
