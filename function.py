@@ -6,7 +6,8 @@ import time
 import json, sys
 from datetime import datetime
 from themes import get_theme, THEMES
-
+import xlrd
+from tkinter import messagebox
 
 current_schedule = ""
 schedule_data = [["", "", "", "", "", ""],
@@ -206,25 +207,81 @@ def schedule_frame_function(frame):
                 row_entries.append(entry)
             schedule_entries.append(row_entries)
 
+        def import_from_file():
+            import_dialog = ctk.CTkToplevel(fg_color=colors["background"])
+            import_dialog.title("Nhập từ file")
+            import_dialog.geometry("400x200")
+            import_dialog.resizable(False, False)
+            import_dialog.grab_set()
+            import_dialog.attributes("-topmost", True)
+
+            class_entry = ctk.CTkEntry(import_dialog, width=150, fg_color=colors["background"], text_color=colors["text_color"], placeholder_text="Tên lớp (VD: 11C7)")
+            class_entry.pack(pady=20)
+
+            file_path = ctk.StringVar()
+
+            def select_file():
+                import_dialog.lift()
+                filename = ctk.filedialog.askopenfilename(parent=import_dialog, filetypes=[("Excel files", "*.xlsx *.xls")])
+                if filename:
+                    file_path.set(filename)
+
+            select_button = ctk.CTkButton(import_dialog, text="Chọn file (.xls)", command=select_file)
+            select_button.pack(pady=10)
+
+            def process_excel_data():
+                if file_path.get() and class_entry.get():
+                    file = file_path.get()
+                    class_name = class_entry.get()
+
+                    wb = xlrd.open_workbook(file)
+                    sheet = wb[0]
+
+                    found = False
+                    for row in range(sheet.nrows):
+                        cell_value = str(sheet.cell_value(row, 4)).upper().strip()
+                        if class_name in cell_value:
+                            found = True
+
+                            for period in range(5):
+                                for day in range(6):
+                                    subject = str(sheet.cell_value(row + 4 + period, day + 1)).strip()
+                                    schedule_entries[period][day].delete(0, 'end')
+                                    schedule_entries[period][day].insert(0, subject)
+
+                            for period in range(5):
+                                for day in range(6):
+                                    subject = str(sheet.cell_value(row + 12 + period, day + 1)).strip()
+                                    schedule_entries[period + 5][day].delete(0, 'end')
+                                    schedule_entries[period + 5][day].insert(0, subject)
+
+                            import_dialog.destroy()
+                            break
+                        
+            
+                    if not found:
+                        messagebox.showinfo("Lỗi", "Không tìm thấy lớp học này trong file")
+                        
+
+            ok_button = ctk.CTkButton(import_dialog, text="XONG!", command=process_excel_data)
+            ok_button.pack(pady=10)            
+
         def save_schedule():
             new_name = new_schedule_name.get()
             if new_name:
                 timestamp = str(int(time.time()))
                 filename = f"{timestamp}_{new_name}.txt"
                 with open(f"saves/{config['current_user']}/schedules/{filename}", "w+", encoding='utf-8') as f:
-                    for row in range(10): 
-                        line = []
-                        for col in range(6):  
+                    for row in range(10):
+                        for col in range(6):
                             subject = schedule_entries[row][col].get()
-                            if subject != "":
-                                line.append(subject)
-                            else:
-                                line.append("-")
-                        f.write(" ".join(line) + "\n")
+                            f.write(f"{subject}\n" if subject else "-\n")
 
-                new_schedule_window.destroy()
-                restart_app(frame)
+                    new_schedule_window.destroy()
+                    restart_app(frame)
 
+        import_button = ctk.CTkButton(new_schedule_window, text="Nhập file", command=import_from_file)
+        import_button.grid(row=12, columnspan=3, pady=10)
         save_button = ctk.CTkButton(new_schedule_window, text="Lưu", command=save_schedule)
         save_button.grid(row=12, columnspan=6, pady=10)
     
@@ -255,11 +312,13 @@ def load_schedule_subjects(frame):
     
     if current_schedule != None:
         with open(f"saves/{config['current_user']}/schedules/{current_schedule}", "r", encoding='utf-8') as f:
-            for i, line in enumerate(f.readlines()):
-                temp_ls = line.strip().split(" ")
-                for j, subject in enumerate(temp_ls):
-                    if j < 6 and i < 10:
-                        if (subject != '-'):
+            lines = f.readlines()
+            for i in range(10):
+                for j in range(6):
+                    index = i * 6 + j
+                    if index < len(lines):
+                        subject = lines[index].strip()
+                        if subject != '-':
                             schedule_data[i][j] = subject
     else:
         schedule_data = raw_schedule_data.copy()
